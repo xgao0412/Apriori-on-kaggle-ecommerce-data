@@ -1,0 +1,89 @@
+---
+title: "ecommerce"
+author: "Xiang Gao"
+date: "2018/1/8"
+output: html_document
+---
+```{r}
+df <- read.csv('data.csv')
+df_group <- subset(df,select=c('InvoiceNo',
+                               'Description',
+                               'InvoiceDate'))
+```
+```{r}
+df_group
+```
+```{r}
+library(plyr)
+```
+```{r}
+df_pivot <- ddply(df_group,c('InvoiceNo','InvoiceDate'),function(df1)paste(df1$Description,collapse = ','))
+```
+
+```{r}
+df_pivot$InvoiceNo <- NULL
+df_pivot$InvoiceDate <- NULL
+colnames(df_pivot) <- 'itemList'
+```
+
+```{r}
+write.csv(df_pivot,'item.csv',quote = F,row.names = T)
+```
+
+```{r}
+library(arules)
+```
+```{r}
+transaction <-read.transactions(file='item.csv',
+                                quote = '',
+                                rm.duplicates = F,
+                                format = 'basket',
+                                sep=',',
+                                cols=1) 
+```
+
+```{r}
+transaction@itemInfo$labels <- gsub("\"","",
+                                    transaction@itemInfo$labels)
+```
+
+```{r}
+basket <- apriori(transaction,parameter = list(sup=0.01,conf=0.5, target='rules'))
+```
+
+```{r}
+basket.df <- as(basket,'data.frame')
+View(basket.df)
+```
+
+```{r}
+library(arulesViz)
+plot(basket)
+plot(basket, method = "grouped", control = list(k = 5))
+plot(basket, method="graph", control=list(type="items"))
+plot(basket, method="paracoord",  control=list(alpha=.5, reorder=TRUE))
+plot(basket,measure=c("support","lift"),shading="confidence",interactive=T)
+```
+
+```{r}
+itemFrequencyPlot(transaction,topN=5)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
